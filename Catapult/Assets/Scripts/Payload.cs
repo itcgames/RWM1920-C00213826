@@ -6,50 +6,127 @@ public class Payload : MonoBehaviour
 {
     public Rigidbody2D rb;
     public Rigidbody2D firePoint;
+
     public float maxDistance = 2.0f;
     public float releaseTime = 0.15f;
+
+	public float ReloadTime = 5.0f;
+	public float FireTime = 1.5f;
+	public bool autoFire = false;
+	private bool disableInput = false;
+
     private bool isPressed = false;
+	private Vector2 autoFirePos;
+
+	public bool placementMode = false;
+
 
     void Update()
     {
-        if (isPressed)
-        {
-            Vector2 mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-
-            
-            if (Vector3.Distance(firePoint.position, mousePos) > maxDistance)
-            {
-                rb.position = firePoint.position + ( mousePos - firePoint.position).normalized * maxDistance;
-            }
-            else
-            {
-                rb.position = mousePos;
-            }
-        }
+		if (!placementMode)
+		{
+			if (!disableInput)
+			{
+				movePayload(Camera.main.ScreenToWorldPoint(Input.mousePosition));
+				if (Input.GetKey(KeyCode.Space))
+				{
+					print("Reload pressed");
+					Reload();
+				}
+			}
+		}
     }
 
 
     void OnMouseDown()
     {
-        isPressed = true;
-        rb.isKinematic = true;
+		if (!placementMode)
+		{
+			if (!disableInput)
+			{
+	        	isPressed = true;
+	        	rb.isKinematic = true;
+			}
+		}
     }
 
     void OnMouseUp()
     {
-        isPressed = false;
-        rb.isKinematic = false;
-        StartCoroutine(Release());
+		if (!placementMode)
+		{
+			if (!disableInput)
+			{
+	        	isPressed = false;
+	        	rb.isKinematic = false;
+				autoFirePos = rb.position;
+	        	StartCoroutine(Release());
+			}
+		}
+		else if (placementMode)
+		{
+			firePoint.position = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+			
+			Reload();
+			placementMode = false;
+		}
     }
 
+
+	void movePayload(Vector2 t_pos)
+	{
+		if (isPressed)
+		{
+			Vector2 mousePos = t_pos;
+
+			if (Vector3.Distance(firePoint.position, mousePos) > maxDistance)
+			{
+				rb.position = firePoint.position + ( mousePos - firePoint.position).normalized * maxDistance;
+			}
+			else
+			{
+				rb.position = mousePos;
+			}
+		}
+	}
+
+	public void Reload()
+	{
+		StopCoroutine(Release());
+		isPressed = false;
+		rb.isKinematic = false;
+		rb.position = firePoint.position;
+		rb.velocity=Vector2.zero;
+		GetComponent<SpringJoint2D>().enabled = true;
+	}
 
     IEnumerator Release()
     {
         yield return new WaitForSeconds(releaseTime);
         GetComponent<SpringJoint2D>().enabled = false;
 
-        this.enabled = false;
-
+		//this.enabled = false;
+		if (autoFire)
+		{
+			disableInput = true;
+			StartCoroutine(ReloadWait());
+		}
     }
+		
+	IEnumerator ReloadWait()
+	{
+		yield return new WaitForSeconds(ReloadTime);
+		Reload();
+		StartCoroutine(FireWait());
+	}
 
+	IEnumerator FireWait()
+	{
+		rb.position = autoFirePos;
+		isPressed = true;
+		rb.isKinematic = true;
+		yield return new WaitForSeconds(FireTime);
+		isPressed = false;
+		rb.isKinematic = false;
+		StartCoroutine(Release());
+	}
 }

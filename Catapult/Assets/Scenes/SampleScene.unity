@@ -164,7 +164,7 @@ Camera:
   far clip plane: 1000
   field of view: 60
   orthographic: 1
-  orthographic size: 6
+  orthographic size: 10
   m_Depth: -1
   m_CullingMask:
     serializedVersion: 2
@@ -557,3 +557,7 @@ MonoBehaviour:
   firePoint: {fileID: 1231394462}
   maxDistance: 2
   releaseTime: 0.15
+  ReloadTime: 5
+  FireTime: 1.5
+  autoFire: 0
+  placementMode: 1

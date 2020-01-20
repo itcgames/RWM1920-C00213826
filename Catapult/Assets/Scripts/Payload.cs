@@ -20,6 +20,15 @@ public class Payload : MonoBehaviour
 
 	public bool placementMode = false;
 
+	public AudioClip fireSound;
+	public AudioClip ReloadSound;
+	private AudioSource sound;
+
+
+	void Start()
+	{
+		sound = GetComponent<AudioSource>();
+	}
 
     void Update()
     {
@@ -31,6 +40,7 @@ public class Payload : MonoBehaviour
 				if (Input.GetKey(KeyCode.Space))
 				{
 					print("Reload pressed");
+					sound.PlayOneShot(ReloadSound, 0.7F);
 					Reload();
 				}
 			}
@@ -97,12 +107,15 @@ public class Payload : MonoBehaviour
 		rb.position = firePoint.position;
 		rb.velocity=Vector2.zero;
 		GetComponent<SpringJoint2D>().enabled = true;
+
 	}
 
     IEnumerator Release()
     {
         yield return new WaitForSeconds(releaseTime);
         GetComponent<SpringJoint2D>().enabled = false;
+
+		sound.PlayOneShot(fireSound, 0.7F);
 
 		//this.enabled = false;
 		if (autoFire)
@@ -115,6 +128,7 @@ public class Payload : MonoBehaviour
 	IEnumerator ReloadWait()
 	{
 		yield return new WaitForSeconds(ReloadTime);
+		sound.PlayOneShot(ReloadSound, 0.7F);
 		Reload();
 		StartCoroutine(FireWait());
 	}

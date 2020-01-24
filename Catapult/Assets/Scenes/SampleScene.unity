@@ -489,5 +489,10 @@ PrefabInstance:
       propertyPath: ReloadSound
       value: 
       objectReference: {fileID: 8300000, guid: eefbccc87a5ccb643b484944e6850eab, type: 3}
+    - target: {fileID: 6608218002980447865, guid: e2fe08ef87b0552468052dedd07318b7,
+        type: 3}
+      propertyPath: placementMode
+      value: 1
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: e2fe08ef87b0552468052dedd07318b7, type: 3}

@@ -60,7 +60,7 @@ public class Payload : MonoBehaviour
 		}
     }
 
-    void OnMouseUp()
+    public void OnMouseUp()
     {
 		if (!placementMode)
 		{

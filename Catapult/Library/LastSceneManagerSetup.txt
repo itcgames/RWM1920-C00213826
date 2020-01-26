@@ -1,4 +1,4 @@
 sceneSetups:
-- path: Assets/InitTestScene637154248163424155.unity
+- path: Assets/Scenes/SlingShotScene.unity
   isLoaded: 1
   isActive: 1

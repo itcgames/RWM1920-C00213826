@@ -4,30 +4,43 @@ using UnityEngine;
 
 public class Payload : MonoBehaviour
 {
+    
     public Rigidbody2D rb;
-    public Rigidbody2D firePoint;
+    public Rigidbody2D firePoint; // the point where spring joint is attached
 
-    public float maxDistance = 2.0f;
-    public float releaseTime = 0.15f;
+    public AudioSource soundSource;
+    public AudioClip fireSound; 
+    public AudioClip ReloadSound;
 
-	public float ReloadTime = 5.0f;
-	public float FireTime = 1.5f;
-	public bool autoFire = false;
-	private bool disableInput = false;
+    // -----------------
 
-    private bool isPressed = false;
-	private Vector2 autoFirePos;
+    public float maxDistance = 2.0f;    // distance away from fire point
+    public float releaseTime = 0.15f;   // time to release when button up
 
-	public bool placementMode = false;
-
-	public AudioClip fireSound;
-	public AudioClip ReloadSound;
-	private AudioSource sound;
+    public float ReloadTime = 5.0f; // auto reload time
+    public float FireTime = 1.5f;   // time spent idle when shot is ready
+    public bool autoFire = false;   // enables / disables autofire mode
 
 
-	void Start()
+    public bool placementMode = false;      // used to enable and disable mouse placement
+
+	private bool disableInput = false;      // enables / disable input
+
+    private bool isBeingPressed = false;    // if mouse currently is clicking
+	private Vector2 autoFirePos;    // point in which auto fire emulates the inputed shot position
+
+    private bool breakSlingshot = false;    // disables payload and breaks the slingshot sprite body
+
+
+    private bool reloadSoundToggle = true;      // stop reload sound playing multaple times on reload button push
+    private bool PlacementModeToggle = true;
+
+    public bool testMode = false;
+
+
+    void Start()
 	{
-		sound = GetComponent<AudioSource>();
+		soundSource = GetComponent<AudioSource>();
 	}
 
     void Update()
@@ -36,17 +49,50 @@ public class Payload : MonoBehaviour
 		{
 			if (!disableInput)
 			{
-				movePayload(Camera.main.ScreenToWorldPoint(Input.mousePosition));
-				if (Input.GetKey(KeyCode.Space))
-				{
-					print("Reload pressed");
-					sound.PlayOneShot(ReloadSound, 0.7F);
-					Reload();
-				}
-			}
-		}
-    }
+                if (!testMode)
+                {
+                    movePayload(Camera.main.ScreenToWorldPoint(Input.mousePosition));
+                }
 
+                if (Input.GetKey(KeyCode.Space))
+				{
+                    if (reloadSoundToggle)
+                    {
+                        soundSource.PlayOneShot(ReloadSound, 0.7F);
+                        Reload();
+                        reloadSoundToggle = false;
+                    }
+				}
+                else
+                {
+                    reloadSoundToggle = true;
+                }
+			}
+        }
+
+        if (!autoFire)
+        {
+            if (Input.GetKey(KeyCode.Q))
+            {
+                if (PlacementModeToggle)
+                {
+                    placementMode = !placementMode;
+                    Reload();
+                    PlacementModeToggle = false;
+                }
+            }
+            else
+            {
+                PlacementModeToggle = true;
+            }
+        }
+
+        if (Input.GetKey(KeyCode.W))
+        {
+            breakSlingshot = true;
+        }
+
+    }
 
     void OnMouseDown()
     {
@@ -54,37 +100,45 @@ public class Payload : MonoBehaviour
 		{
 			if (!disableInput)
 			{
-	        	isPressed = true;
+	        	isBeingPressed = true;
 	        	rb.isKinematic = true;
 			}
 		}
     }
 
-    public void OnMouseUp()
+
+    public void releasePayload()
     {
-		if (!placementMode)
-		{
-			if (!disableInput)
-			{
-	        	isPressed = false;
-	        	rb.isKinematic = false;
-				autoFirePos = rb.position;
-	        	StartCoroutine(Release());
-			}
-		}
-		else if (placementMode)
-		{
-			firePoint.position = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-			
-			Reload();
-			placementMode = false;
-		}
+        if (!placementMode)
+        {
+            if (!disableInput)
+            {
+                isBeingPressed = false;
+                rb.isKinematic = false;
+                autoFirePos = rb.position;
+                StartCoroutine(Release());
+            }
+        }
+        else if (placementMode)
+        {
+            if (!testMode)
+                firePoint.position = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+
+            Reload();
+            placementMode = false;
+        }
     }
 
 
-	void movePayload(Vector2 t_pos)
+    public void OnMouseUp()
+    {
+        releasePayload();
+    }
+
+
+	public void movePayload(Vector2 t_pos)
 	{
-		if (isPressed)
+		if (isBeingPressed)
 		{
 			Vector2 mousePos = t_pos;
 
@@ -101,8 +155,9 @@ public class Payload : MonoBehaviour
 
 	public void Reload()
 	{
-		StopCoroutine(Release());
-		isPressed = false;
+        if (!testMode)
+            StopCoroutine(Release());
+		isBeingPressed = false;
 		rb.isKinematic = false;
 		rb.position = firePoint.position;
 		rb.velocity=Vector2.zero;
@@ -110,25 +165,44 @@ public class Payload : MonoBehaviour
 
 	}
 
+    public bool getBreakSlingshot()
+    {
+        return breakSlingshot;
+    }
+
+    public void setBreakSlingshot(bool t_temp)
+    {
+        breakSlingshot = t_temp;
+    }
+
+    public void setIsBeingPressed(bool t_temp)
+    {
+        isBeingPressed = t_temp;
+    }
+
     IEnumerator Release()
     {
         yield return new WaitForSeconds(releaseTime);
         GetComponent<SpringJoint2D>().enabled = false;
 
-		sound.PlayOneShot(fireSound, 0.7F);
+        if (!testMode)
+            soundSource.PlayOneShot(fireSound, 0.7F);
 
-		//this.enabled = false;
 		if (autoFire)
 		{
 			disableInput = true;
 			StartCoroutine(ReloadWait());
 		}
+        else
+        {
+            disableInput = false;
+        }
     }
 		
 	IEnumerator ReloadWait()
 	{
 		yield return new WaitForSeconds(ReloadTime);
-		sound.PlayOneShot(ReloadSound, 0.7F);
+		soundSource.PlayOneShot(ReloadSound, 0.7F);
 		Reload();
 		StartCoroutine(FireWait());
 	}
@@ -136,10 +210,10 @@ public class Payload : MonoBehaviour
 	IEnumerator FireWait()
 	{
 		rb.position = autoFirePos;
-		isPressed = true;
+		isBeingPressed = true;
 		rb.isKinematic = true;
 		yield return new WaitForSeconds(FireTime);
-		isPressed = false;
+		isBeingPressed = false;
 		rb.isKinematic = false;
 		StartCoroutine(Release());
 	}
